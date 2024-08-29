@@ -1,0 +1,54 @@
+services:
+  api:
+    build:
+      dockerfile: Dockerfile
+      context: ./api
+      # only build development stage from the Dockerfile
+      target: development
+    # Mount our host directory to the docker container
+    # Mount api dir (./api) to the docker container (./nazar-hamuliak/api/src/app)
+    # Reflect File changes from host to container
+    volumes:
+      - ./api:/usr/src/api
+      - /usr/src/api/node_modules
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgres://admin:root@postgres:5432/chat
+      NODE_ENV: development
+      PORT: 3000
+    ports:
+      - 3000:3000
+      - 9229:9229
+
+  app:
+    build:
+      dockerfile: Dockerfile
+      context: ./app
+      target: development
+    volumes:
+      - ./app:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - 4200:4200
+    links:
+      - api
+
+  postgres:
+    image: postgres:16.4
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: chat
+    ports:
+      - 35000:5432
+
+  postgres_admin:
+    image: dpage/pgadmin4:8.11.0
+    depends_on:
+      - postgres
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - 5050:80
